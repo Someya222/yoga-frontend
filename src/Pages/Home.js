@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SearchBar from '../components/SearchBar';
 import PoseCard from '../components/PoseCard';
+import './Home.css'
 
 function Home() {
   const [filtered, setFiltered] = useState([]);
@@ -160,7 +161,9 @@ const goalInfo = raw?.[0]; // ✅ correct variable is 'raw'
     <div>
       <SearchBar onSearch={handleSearch} />
 
-      {loading && <p style={{ textAlign: 'center' }}>Generating yoga suggestions with AI...</p>}
+      {loading && (
+  <div className="spinner"></div>
+)}
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
         {(filtered.length > 0 ? filtered : displayPoses).map((pose, idx) => (

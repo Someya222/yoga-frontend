@@ -5,6 +5,7 @@ import Navbar from './components/Navbar';
 import Login from './components/Login'; 
 import Dashboard from './Pages/Dashboard';
 import Home from './Pages/Home';
+import RoutinePlan from './Pages/RoutinePlan';
 
 function App() {
   return (
@@ -15,6 +16,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/routine"element={<RoutinePlan />} />
+
       </Routes>
     </Router>
   );
