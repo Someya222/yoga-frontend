@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import API from '../api';
+import './Dashboard.css';
 import { useNavigate } from 'react-router-dom';
 
 function Dashboard() {
@@ -9,106 +10,95 @@ function Dashboard() {
   const [streak, setStreak] = useState(0);
   const [calendarData, setCalendarData] = useState([]);
   const [dailyPose, setDailyPose] = useState(null);
+  const [isFlipped, setIsFlipped] = useState(false);
 
+  // Load yoga history and streak
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        await API.get('/auth/protected');
-      } catch (err) {
-        navigate('/login');
-      }
-    };
+  const fetchData = async () => {
+    try {
+      await API.get('/auth/protected');
 
-    checkAuth();
+      const today = new Date().toISOString().split('T')[0];
 
-    const today = new Date().toISOString().split('T')[0];
+      // ✅ Get calendar history
+      const now = new Date();
+const year = now.getFullYear();
+const month = String(now.getMonth() + 1).padStart(2, '0'); // Add leading 0
 
-    const storedDone = localStorage.getItem(`yoga-done-${today}`);
-    setYogaDone(storedDone === 'true');
+const res = await API.get(`/yoga/history?year=${year}&month=${month}`);
+const historyMap = res.data;
 
-    const storedStreak = parseInt(localStorage.getItem('yoga-streak') || '0');
-    const lastDate = localStorage.getItem('last-yoga-date');
+// 🔁 Convert object to array
+const history = Object.entries(historyMap).map(([date, done]) => ({
+  date,
+  done,
+}));
 
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yyyymmdd = yesterday.toISOString().split('T')[0];
+const todayData = history.find(entry => entry.date === today);
+setYogaDone(!!todayData?.done);
 
-    if (storedDone === 'true') {
-  if (lastDate === yyyymmdd) {
-    const updated = storedStreak + 1;
-    setStreak(updated);
-    localStorage.setItem('yoga-streak', updated);
-  } else if (lastDate === today) {
-    // Already updated today
-    setStreak(storedStreak);
-  } else {
-    setStreak(1);
-    localStorage.setItem('yoga-streak', 1);
-  }
-  localStorage.setItem('last-yoga-date', today);
-} else {
-  setStreak(storedStreak);
-}
+const daysInMonth = new Date(year, month, 0).getDate(); // total days
+const fullCalendar = Array.from({ length: daysInMonth }, (_, i) => {
+  const day = i + 1;
+  const dateStr = `${year}-${month}-${String(day).padStart(2, '0')}`;
+  return {
+    day,
+    done: !!historyMap[dateStr]
+  };
+});
+
+setCalendarData(fullCalendar);
 
 
-    generateCalendar();
-    generateDailyPose(today);
-  }, [navigate]);
+
+      // ✅ Get streak from backend
+      const streakRes = await API.get('/yoga/streak');
+      setStreak(streakRes.data.streak || 0);
+
+    } catch (err) {
+      console.error('Error loading dashboard:', err);
+      navigate('/login');
+    }
+  };
+
+  fetchData();
+}, [navigate]);
+
+
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/login');
   };
 
-  const handleCheckbox = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yyyymmdd = yesterday.toISOString().split('T')[0];
+  const handleCheckbox = async () => {
+  const today = new Date().toISOString().split('T')[0];
 
-    const storedStreak = parseInt(localStorage.getItem('yoga-streak') || '0');
-    const lastDate = localStorage.getItem('last-yoga-date');
+  try {
+    const res = await API.post('/yoga/save-daily', {
+      date: today,
+      done: !yogaDone,
+      streak: yogaDone ? streak - 1 : streak + 1
+    });
 
-    const newValue = !yogaDone;
-    localStorage.setItem(`yoga-done-${today}`, newValue);
-    setYogaDone(newValue);
+    if (res.data.success) {
+      const updated = !yogaDone;
+      setYogaDone(updated);
+      setStreak(prev => (updated ? prev + 1 : prev - 1));
 
-    if (newValue) {
-      if (lastDate === yyyymmdd) {
-        const newStreak = storedStreak + 1;
-        setStreak(newStreak);
-        localStorage.setItem('yoga-streak', newStreak);
-      } else if (lastDate !== today) {
-        setStreak(1);
-        localStorage.setItem('yoga-streak', 1);
-      }
-      localStorage.setItem('last-yoga-date', today);
+      setCalendarData(prev =>
+        prev.map(entry =>
+          entry.day === parseInt(today.split('-')[2]) ? { ...entry, done: updated } : entry
+        )
+      );
+
+      alert('Yoga status updated!');
     }
+  } catch (err) {
+    console.error('Failed to update yoga status:', err);
+  }
+};
 
-    generateCalendar();
-  };
-
-  const generateCalendar = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    const newCalendar = [];
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateObj = new Date(year, month, day);
-      const isoDate = dateObj.toISOString().split('T')[0];
-      const isDone = localStorage.getItem(`yoga-done-${isoDate}`) === 'true';
-
-      newCalendar.push({
-        day,
-        done: isDone,
-      });
-    }
-
-    setCalendarData(newCalendar);
-  };
 
   const generateDailyPose = async (today) => {
     const stored = localStorage.getItem(`daily-pose-${today}`);
@@ -118,13 +108,11 @@ function Dashboard() {
     }
 
     try {
-      // 1. Load the dataset
       const datasetRes = await fetch('http://localhost:5000/api/yoga/dataset');
       const dataset = await datasetRes.json();
 
       const randomPose = dataset[Math.floor(Math.random() * dataset.length)];
 
-      // 2. Call Gemini for benefits + how-to
       const aiRes = await fetch('/api/yoga/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -135,11 +123,7 @@ function Dashboard() {
       let raw = aiData.poses;
 
       if (typeof raw === 'string') {
-        raw = raw
-          .replace(/```json/, '')
-          .replace(/```/, '')
-          .trim();
-
+        raw = raw.replace(/```json/, '').replace(/```/, '').trim();
         raw = JSON.parse(raw);
       }
 
@@ -159,35 +143,32 @@ function Dashboard() {
     }
   };
 
+  // Load daily pose on mount
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    generateDailyPose(today);
+  }, []);
+
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="dashboard">
       <h2>Dashboard</h2>
 
-      <label style={{ display: 'block', marginTop: '20px' }}>
+      <label className="checkbox-label">
         <input type="checkbox" checked={yogaDone} onChange={handleCheckbox} />
         {' '}Yoga completed today
       </label>
 
-      <p style={{ marginTop: '10px' }}>🔥 Current Streak: {streak} {streak === 1 ? 'day' : 'days'}!</p>
+      <p className="streak-text">
+        🔥 Current Streak: {streak} {streak === 1 ? 'day' : 'days'}!
+      </p>
 
       <h3 style={{ marginTop: '30px' }}>🗓️ Practice History (This Month)</h3>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(7, 1fr)',
-        gap: '5px',
-        marginTop: '10px',
-        maxWidth: '300px'
-      }}>
+      <div className="calendar">
         {calendarData.map((date, idx) => (
-          <div key={idx}
-               style={{
-                 padding: '10px',
-                 textAlign: 'center',
-                 borderRadius: '6px',
-                 backgroundColor: date.done ? '#b2f2bb' : '#f1f1f1',
-                 color: date.done ? '#0f5132' : '#555',
-                 border: date.done ? '1px solid #5cb85c' : '1px solid #ccc'
-               }}>
+          <div
+            key={idx}
+            className={`calendar-box ${date.done ? 'done' : ''}`}
+          >
             {date.day}
           </div>
         ))}
@@ -196,26 +177,30 @@ function Dashboard() {
       {dailyPose && (
         <>
           <h3 style={{ marginTop: '40px' }}>🌟 Daily AI Yoga Challenge</h3>
-          <div style={{
-            border: '1px solid #ccc',
-            padding: '15px',
-            borderRadius: '10px',
-            maxWidth: '400px',
-            marginTop: '10px',
-            background: '#f9f9f9'
-          }}>
-            <h4>{dailyPose.title}</h4>
-            <img src={dailyPose.image} alt={dailyPose.title} style={{ width: '100%', borderRadius: '8px' }} />
-            <p><strong>How to do:</strong> {dailyPose.instructions}</p>
-            <p><strong>Benefits:</strong> {dailyPose.benefits}</p>
+          <div
+            className="flip-container centered"
+            onClick={() => setIsFlipped(!isFlipped)}
+          >
+            <div className={`flipper ${isFlipped ? 'flipped' : ''}`}>
+              <div className="front">
+                <h4>{dailyPose.title}</h4>
+                <img src={dailyPose.image} alt={dailyPose.title} />
+              </div>
+              <div className="back">
+                <h4>{dailyPose.title}</h4>
+                <p><strong>How to do:</strong> {dailyPose.instructions}</p>
+                <p><strong>Benefits:</strong> {dailyPose.benefits}</p>
+              </div>
+            </div>
           </div>
         </>
       )}
 
-      <button onClick={handleLogout} style={{ marginTop: '30px' }}>Logout</button>
+      <button onClick={handleLogout} className="logout-btn">Logout</button>
     </div>
   );
 }
 
 export default Dashboard;
+
 

@@ -1,3 +1,4 @@
+import './RoutinePlan.css';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../api';
@@ -10,26 +11,38 @@ function RoutinePlan() {
   const [routine, setRoutine] = useState([]);
   const [saved, setSaved] = useState(false);
   const [streak, setStreak] = useState(0);
+  const [poseStatus, setPoseStatus] = useState({}); // { index: true/false }
+
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        await API.get('/auth/protected');
-      } catch {
-        navigate('/login');
-      }
-    };
-    checkAuth();
+  const checkAuthAndFetch = async () => {
+    try {
+      await API.get('/auth/protected');
 
-    const stored = localStorage.getItem(`routine-${today}`);
-    if (stored) {
-      setRoutine(JSON.parse(stored));
-      setSaved(true);
+      const res = await API.get('/yoga/streak');
+      setStreak(res.data.streak || 0);
+
+     const routineRes = await API.get(`/yoga/routine?date=${today}`);
+if (routineRes.data?.length) {
+  setRoutine(routineRes.data);
+  setSaved(true);
+
+  const savedStatus = {};
+  routineRes.data.forEach((pose, idx) => {
+    savedStatus[idx] = pose.done;
+  });
+  setPoseStatus(savedStatus);
+}
+
+    } catch {
+      navigate('/login');
     }
+  };
 
-    const storedStreak = parseInt(localStorage.getItem('yoga-streak') || '0');
-    setStreak(storedStreak);
-  }, [navigate]);
+  checkAuthAndFetch();
+}, [navigate]);
+
+
 
   const handleGenerate = async () => {
     if (!goal.trim()) return alert('Please enter a goal');
@@ -77,35 +90,31 @@ function RoutinePlan() {
     }
   };
 
-  const handleMarkDone = (index) => {
-    const updated = [...routine];
-    updated[index].done = !updated[index].done;
-    setRoutine(updated);
-    localStorage.setItem(`routine-${today}`, JSON.stringify(updated));
+  const handleMarkDone = async (index) => {
+  const today = new Date().toISOString().split('T')[0];
 
-    const allDone = updated.every(pose => pose.done);
-    if (allDone) {
-      localStorage.setItem(`yoga-done-${today}`, 'true');
+  // ✅ Update routine's pose `done` status
+  const updatedRoutine = [...routine];
+  updatedRoutine[index].done = !updatedRoutine[index].done;
+  setRoutine(updatedRoutine);
 
-      const lastDate = localStorage.getItem('last-yoga-date');
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yyyymmdd = yesterday.toISOString().split('T')[0];
+  // Update poseStatus as well (optional if you're keeping it)
+  const updatedStatus = { ...poseStatus, [index]: updatedRoutine[index].done };
+  setPoseStatus(updatedStatus);
 
-      const storedStreak = parseInt(localStorage.getItem('yoga-streak') || '0');
+  // 🔄 Send full routine to backend
+  try {
+    await API.post('/yoga/routine-status', {
+      date: today,
+      routine: updatedRoutine,
+    });
+  } catch (err) {
+    console.error('Error syncing pose status to backend:', err);
+  }
+};
 
-      if (lastDate === yyyymmdd) {
-        const newStreak = storedStreak + 1;
-        localStorage.setItem('yoga-streak', newStreak);
-        setStreak(newStreak);
-      } else if (lastDate !== today) {
-        localStorage.setItem('yoga-streak', 1);
-        setStreak(1);
-      }
 
-      localStorage.setItem('last-yoga-date', today);
-    }
-  };
+
 
   const handleChangeGoal = () => {
     localStorage.removeItem(`routine-${today}`);
@@ -115,7 +124,7 @@ function RoutinePlan() {
   };
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="routine-container">
       <h2>🎯 Goal-Based Yoga Routine</h2>
 
       {!saved && (
@@ -158,16 +167,17 @@ function RoutinePlan() {
               <p><strong>How to do:</strong> {pose.instructions}</p>
               <p><strong>Benefits:</strong> {pose.benefits}</p>
               <label>
-                <input
-                  type="checkbox"
-                  checked={pose.done}
-                  onChange={() => handleMarkDone(index)}
-                />{' '}
+               <input
+  type="checkbox"
+  checked={poseStatus[index] || false}
+  onChange={() => handleMarkDone(index)}
+/>
+
                 Mark as Done
               </label>
             </div>
           ))}
-          {routine.length > 0 && routine.every(p => p.done) && (
+         {routine.length > 0 && routine.every((_, idx) => poseStatus[idx]) && (
   <div style={{
     marginTop: '20px',
     padding: '10px',

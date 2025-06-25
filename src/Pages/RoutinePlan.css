@@ -1,0 +1,43 @@
+/* RoutinePlan.css */
+.routine-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.routine-container h2,
+.routine-container h3,
+.routine-container p,
+.routine-container input,
+.routine-container button,
+.routine-container label,
+.routine-container div {
+  text-align: center;
+}
+
+.routine-card {
+  max-width: 400px;
+  width: 100%;
+  margin-bottom: 15px;
+  background: #f9f9f9;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.routine-card img {
+  width: 100%;
+  border-radius: 5px;
+}
+
+.completion-message {
+  margin-top: 20px;
+  padding: 10px;
+  background: #d4edda;
+  color: #155724;
+  border-radius: 6px;
+  font-weight: bold;
+  text-align: center;
+}

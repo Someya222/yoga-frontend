@@ -1,0 +1,175 @@
+.dashboard {
+  background-color: #fefef9;
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', sans-serif;
+  text-align: center; /* Center align */
+}
+
+.checkbox-label {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center content inside the label */
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 20px; /* Adjust width */
+  height: 20px; /* Adjust height */
+  cursor: pointer; /* Pointer cursor on hover */
+}
+
+.streak-text {
+  margin-top: 10px;
+  color: #e36d2c;
+  font-weight: bold;
+  font-size: 18px; /* Increased font size for better readability */
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px; /* Increased gap for better spacing */
+  margin-top: 15px;
+}
+
+.calendar-box {
+  padding: 15px; /* Increased padding for better visual comfort */
+  text-align: center;
+  border-radius: 8px; /* Slightly rounded corners */
+  border: 1px solid #ddd; /* Softer border color */
+  color: #444;
+  background-color: #f7f7f7;
+  transition: background 0.3s, transform 0.2s; /* Added transform transition */
+}
+
+.calendar-box:hover {
+  transform: scale(1.05); /* Scale effect on hover */
+}
+
+.calendar-box.done {
+  background-color: #a3e7af;
+  border: 1px solid #5cb85c;
+  color: #155724;
+}
+
+.pose-card {
+  border: 1px solid #ddd; /* Softer border color */
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 450px;
+  margin-top: 10px;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Enhanced shadow */
+}
+
+.pose-card img {
+  width: 100%;
+  border-radius: 8px;
+  margin-top: 0px;
+}
+
+.pose-card h4 {
+  margin-bottom: 5px;
+  font-size: 20px; /* Increased font size */
+}
+
+.pose-card p {
+  margin: 20px 0;
+  font-size: 16px; /* Enhanced readability */
+}
+
+/* Center the card */
+.centered {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+}
+
+/* Flip effect container */
+.flip-container {
+  perspective: 1000px;
+  width: 100%;
+  max-width: 400px;
+  height: 300px;
+  cursor: pointer;
+}
+
+.flipper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s ease-in-out;
+  transform-style: preserve-3d;
+}
+
+.flipper.flipped {
+  transform: rotateY(180deg);
+}
+
+.front, .back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background-color: #fff;
+  padding: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  backface-visibility: hidden;
+}
+
+.front {
+  z-index: 2;
+}
+
+.front img {
+  width: 100%;
+  height: 200px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.back {
+  transform: rotateY(180deg);
+  overflow-y: auto;
+}
+
+
+.logout-btn {
+  margin-top: 50px; /* Reduced margin for better layout */
+  padding: 12px 25px; /* Adjusted padding for better sizing */
+  border-radius: 8px;
+  background-color: #e03616;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s, transform 0.2s; /* Added transform on hover */
+}
+
+.logout-btn:hover {
+  background-color: #c02f13;
+  transform: scale(1.05); /* Hover effect for button */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 20px;
+  }
+
+  .calendar {
+    grid-template-columns: repeat(4, 1fr); /* Adjust for smaller screens */
+  }
+
+  .pose-card {
+    max-width: 100%; /* Full width for mobile */
+  }
+}
+
