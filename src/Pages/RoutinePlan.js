@@ -52,7 +52,7 @@ if (fetchedRoutine?.length) {
   if (!goal.trim()) return alert('Please enter a goal');
   setLoading(true);
   try {
-    const datasetRes = await fetch('http://localhost:5000/api/yoga/dataset');
+    const datasetRes = await fetch('https://yoga-backend-17s9.onrender.com/api/yoga/dataset');
     const dataset = await datasetRes.json();
 
     const aiRes = await fetch('/api/yoga/generate', {

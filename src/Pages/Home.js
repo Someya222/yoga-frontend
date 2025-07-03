@@ -45,7 +45,7 @@ function Home() {
 
   try {
     // 1. Fetch the yoga dataset
-    const datasetRes = await fetch('http://localhost:5000/api/yoga/dataset');
+    const datasetRes = await fetch('https://yoga-backend-17s9.onrender.com/api/yoga/dataset');
     const datasetText = await datasetRes.text();
 
     let dataset;

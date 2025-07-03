@@ -95,7 +95,7 @@ const [selectedYear, setSelectedYear] = useState(today.getFullYear());
     }
 
     try {
-      const datasetRes = await fetch('http://localhost:5000/api/yoga/dataset');
+      const datasetRes = await fetch('https://yoga-backend-17s9.onrender.com/api/yoga/dataset');
       const dataset = await datasetRes.json();
 
       const randomPose = dataset[Math.floor(Math.random() * dataset.length)];

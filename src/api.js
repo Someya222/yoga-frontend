@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: 'https://yoga-backend-17s9.onrender.com/api',
 });
 
 // Add token to headers if present
