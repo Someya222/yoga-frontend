@@ -184,7 +184,7 @@ const enriched = raw.slice(0, 6).map((pose) => {
 
   return (
     <div className="routine-container">
-      <h2 style={{ marginTop: '1px' }}> Goal-Based Yoga Routine</h2>
+      <h2>Goal-Based Yoga Routine</h2>
 
       {!saved && (
         <div style={{ marginBottom: '20px' }}>
@@ -206,26 +206,42 @@ const enriched = raw.slice(0, 6).map((pose) => {
 
       {saved && (
         <div style={{ marginBottom: '10px' }}>
-          <h3> Routine for <span style={{ color: 'green' }}>{goal || 'Your Goal'}</span></h3>
-          <p><em>This routine focuses on your goal: <strong>{goal}</strong>.</em></p>
+          <h3>Routine for <span style={{ color: 'green' }}>{goal || 'Your Goal'}</span></h3>
+          <p className="routine-goal-desc">This routine focuses on your goal: <strong>{goal}</strong>.</p>
           <button class="change-goal-button" onClick={handleChangeGoal}>Change Goal</button>
-          <p style={{ marginTop: '10px' }}> Routine Streak: {streak} {streak === 1 ? 'day' : 'days'}!</p>
+          <div className="streak-graphic-container" style={{ marginTop: '10px' }}>
+            <div className="streak-flame">
+              {/* SVG flame graphic */}
+              <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 2C19 2 13.5 10.5 13.5 16C13.5 20.1421 16.8579 23.5 21 23.5C25.1421 23.5 28.5 20.1421 28.5 16C28.5 10.5 23 2 23 2C22.5 6 19 2 19 2Z" fill="#ffb300"/>
+                <path d="M19 6C16.5 10 16.5 14 19 16C21.5 14 21.5 10 19 6Z" fill="#ff7043"/>
+                <ellipse cx="19" cy="28" rx="10" ry="8" fill="#ffe082"/>
+              </svg>
+            </div>
+            <div>
+              <div className="streak-text">
+                Routine Streak: <span className="streak-count">{streak}</span> {streak === 1 ? 'day' : 'days'}!
+              </div>
+              <div className="streak-progress-bar">
+                <div
+                  className="streak-progress-fill"
+                  style={{ width: `${Math.min((streak % 7) / 7 * 100, 100)}%` }}
+                ></div>
+              </div>
+              <div className="streak-progress-label">
+                {streak % 7 === 0 && streak > 0 ? '🔥 New Milestone!' : `${7 - (streak % 7)} days to next badge`}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
       {routine.length > 0 && (
         <div className="routine-card-internal">
           {routine.map((pose, index) => (
-            <div key={index} style={{
-              border: '1px solid #ccc',
-              padding: '10px',
-              marginBottom: '15px',
-              borderRadius: '8px',
-              background: '#f9f9f9',
-              maxWidth: '400px'
-            }}>
+            <div key={index} className="routine-card">
               <h4>{pose.title}</h4>
-              <img src={pose.image} alt={pose.title} style={{ width: '100%', borderRadius: '5px' }} />
+              <img src={pose.image} alt={pose.title} />
               <p><strong>How to do:</strong> {pose.instructions}</p>
               <p><strong>Benefits:</strong> {pose.benefits}</p>
               <label>

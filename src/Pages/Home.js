@@ -37,6 +37,10 @@ function Home() {
 
   const handleSearch = async (query) => {
   const term = query.toLowerCase();
+  if (!term.trim()) {
+    setFiltered([]); // Show all static poses
+    return;
+  }
   setLoading(true);
 
   try {
@@ -157,14 +161,14 @@ const enriched = aiPoses.map((pose) => {
 
 
   return (
-    <div>
+    <div className="home-wrapper">
       <SearchBar onSearch={handleSearch} />
 
       {loading && (
   <div className="spinner"></div>
 )}
 
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', flexWrap: 'wrap' }}>
         {(filtered.length > 0 ? filtered : displayPoses).map((pose, idx) => (
           <PoseCard
             key={idx}

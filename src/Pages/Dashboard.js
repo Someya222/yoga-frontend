@@ -12,46 +12,37 @@ function Dashboard() {
   const [dailyPose, setDailyPose] = useState(null);
   const [isFlipped, setIsFlipped] = useState(false);
 
+  const today = new Date();
+const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1); // 1-indexed
+const [selectedYear, setSelectedYear] = useState(today.getFullYear());
+
+
   // Load yoga history and streak
-  useEffect(() => {
+ useEffect(() => {
   const fetchData = async () => {
     try {
       await API.get('/auth/protected');
 
+      const paddedMonth = String(selectedMonth).padStart(2, '0');
+      const res = await API.get(`/yoga/history?months=1`);
+      const historyMap = res.data;
+
       const today = new Date().toISOString().split('T')[0];
+      const todayData = historyMap[today];
+      setYogaDone(!!todayData);
 
-      // ✅ Get calendar history
-      const now = new Date();
-const year = now.getFullYear();
-const month = String(now.getMonth() + 1).padStart(2, '0'); // Add leading 0
+      const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+      const fullCalendar = Array.from({ length: daysInMonth }, (_, i) => {
+        const day = i + 1;
+        const dateStr = `${selectedYear}-${paddedMonth}-${String(day).padStart(2, '0')}`;
+        return {
+          day,
+          done: !!historyMap[dateStr],
+        };
+      });
 
-const res = await API.get(`/yoga/history?year=${year}&month=${month}`);
-const historyMap = res.data;
+      setCalendarData(fullCalendar);
 
-// 🔁 Convert object to array
-const history = Object.entries(historyMap).map(([date, done]) => ({
-  date,
-  done,
-}));
-
-const todayData = history.find(entry => entry.date === today);
-setYogaDone(!!todayData?.done);
-
-const daysInMonth = new Date(year, month, 0).getDate(); // total days
-const fullCalendar = Array.from({ length: daysInMonth }, (_, i) => {
-  const day = i + 1;
-  const dateStr = `${year}-${month}-${String(day).padStart(2, '0')}`;
-  return {
-    day,
-    done: !!historyMap[dateStr]
-  };
-});
-
-setCalendarData(fullCalendar);
-
-
-
-      // ✅ Get streak from backend
       const streakRes = await API.get('/yoga/streak');
       setStreak(streakRes.data.streak || 0);
 
@@ -62,11 +53,9 @@ setCalendarData(fullCalendar);
   };
 
   fetchData();
-}, [navigate]);
+}, [navigate, selectedMonth, selectedYear]);
 
-
-
-  const handleLogout = () => {
+ const handleLogout = () => {
     navigate('/login');
   };
 
@@ -155,11 +144,62 @@ setCalendarData(fullCalendar);
         {' '}Yoga completed today
       </label>
 
-      <p className="streak-text">
-        🔥 Current Streak: {streak} {streak === 1 ? 'day' : 'days'}!
-      </p>
+      <div className="streak-graphic-container">
+        <div className="streak-flame">
+          {/* SVG flame graphic */}
+          <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 2C19 2 13.5 10.5 13.5 16C13.5 20.1421 16.8579 23.5 21 23.5C25.1421 23.5 28.5 20.1421 28.5 16C28.5 10.5 23 2 23 2C22.5 6 19 2 19 2Z" fill="#ffb300"/>
+            <path d="M19 6C16.5 10 16.5 14 19 16C21.5 14 21.5 10 19 6Z" fill="#ff7043"/>
+            <ellipse cx="19" cy="28" rx="10" ry="8" fill="#ffe082"/>
+          </svg>
+        </div>
+        <div>
+          <div className="streak-text">
+            Current Streak: <span className="streak-count">{streak}</span> {streak === 1 ? 'day' : 'days'}!
+          </div>
+          <div className="streak-progress-bar">
+            <div
+              className="streak-progress-fill"
+              style={{ width: `${Math.min((streak % 7) / 7 * 100, 100)}%` }}
+            ></div>
+          </div>
+          <div className="streak-progress-label">
+            {streak % 7 === 0 && streak > 0 ? '🔥 New Milestone!' : `${7 - (streak % 7)} days to next badge`}
+          </div>
+        </div>
+      </div>
 
-      <h3 style={{ marginTop: '30px' }}>🗓️ Practice History (This Month)</h3>
+<div>
+  <button className="month-switch" onClick={() => {
+    if (selectedMonth === 1) {
+      setSelectedMonth(12);
+      setSelectedYear(prev => prev - 1);
+    } else {
+      setSelectedMonth(prev => prev - 1);
+    }
+  }}>
+    Previous
+  </button>
+
+  <span className="dashboard-month-label">
+    {new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}
+  </span>
+
+  <button  className="month-switch" onClick={() => {
+    if (selectedMonth === 12) {
+      setSelectedMonth(1);
+      setSelectedYear(prev => prev + 1);
+    } else {
+      setSelectedMonth(prev => prev + 1);
+    }
+  }}>
+    Next
+  </button>
+</div>
+
+
+
+      <h3 style={{ marginTop: '30px' }}> Practice History</h3>
       <div className="calendar">
         {calendarData.map((date, idx) => (
           <div
@@ -173,7 +213,7 @@ setCalendarData(fullCalendar);
 
       {dailyPose && (
         <>
-          <h3 style={{ marginTop: '40px' }}>🌟 Daily AI Yoga Challenge</h3>
+          <h3 style={{ marginTop: '40px' }}> Daily AI Yoga Challenge</h3>
           <div
             className="flip-container centered"
             onClick={() => setIsFlipped(!isFlipped)}

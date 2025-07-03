@@ -6,6 +6,9 @@
   border-radius: 12px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .login-container h2 {
@@ -29,7 +32,7 @@
 
 .login-container button {
   padding: 12px;
-  background-color: #4a148c;
+  background-color: #9325ca;
   color: white;
   border: none;
   border-radius: 8px;
