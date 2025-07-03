@@ -125,16 +125,14 @@ const goalInfo = raw?.[0]; // ✅ correct variable is 'raw'
     const aiPoses = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
     // 5. Enrich each Gemini pose with image from dataset
-    const enriched = aiPoses.map((pose) => {
-  // Extract Sanskrit and English names from Gemini title
-  const [sanskritRaw, englishRaw] = pose.title.split('(');
-  const sanskrit = sanskritRaw?.trim().toLowerCase();
-  const english = englishRaw?.replace(')', '').trim().toLowerCase();
+const enriched = aiPoses.map((pose) => {
+  const english = pose.english_name_search?.trim().toLowerCase();
+  const sanskrit = pose.sanskrit_name_search?.trim().toLowerCase();
 
-  // Try matching with either English or Sanskrit from dataset
+  // Match based on explicitly provided keys
   const found = dataset.find((item) => {
-    const name = item.name?.toLowerCase();
-    const sanskritName = item.sanskrit_name?.toLowerCase();
+    const name = item.name?.trim().toLowerCase();
+    const sanskritName = item.sanskrit_name?.trim().toLowerCase();
     return name === english || sanskritName === sanskrit;
   });
 
@@ -145,6 +143,7 @@ const goalInfo = raw?.[0]; // ✅ correct variable is 'raw'
     image: found?.photo_url || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg',
   };
 });
+
 
     setFiltered(enriched);
   } catch (error) {

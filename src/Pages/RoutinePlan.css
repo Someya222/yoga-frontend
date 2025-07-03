@@ -1,9 +1,20 @@
 /* RoutinePlan.css */
 .routine-container {
+  background-color: hsl(276, 19%, 85%);
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', sans-serif;
+  text-align: center; /* Center align */
+}
+
+.routine-card-internal {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
+  padding: 0px;
   font-family: 'Segoe UI', sans-serif;
 }
 
@@ -15,6 +26,44 @@
 .routine-container label,
 .routine-container div {
   text-align: center;
+}
+
+/* Button styles */
+.goal-button {
+  background-color: #8c36ce;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 10px 5px;
+}
+
+.goal-button:hover {
+  background-color: #5c2388;
+  transform: translateY(-2px);
+}
+
+.goal-button:active {
+  transform: translateY(0);
+}
+
+.change-goal-button {
+  background-color: #8c36ce;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 10px 5px;
+}
+
+.change-goal-button:hover {
+  background-color: #5c2388;
 }
 
 .routine-card {
@@ -29,7 +78,10 @@
 
 .routine-card img {
   width: 100%;
+  height: 100px; /* Fixed height to reduce from top */
+  object-fit: cover;
   border-radius: 5px;
+  margin-top: -20px; /* Slightly overlap the container */
 }
 
 .completion-message {

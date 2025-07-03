@@ -67,7 +67,6 @@ setCalendarData(fullCalendar);
 
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
     navigate('/login');
   };
 
@@ -99,8 +98,7 @@ setCalendarData(fullCalendar);
   }
 };
 
-
-  const generateDailyPose = async (today) => {
+ const generateDailyPose = async (today) => {
     const stored = localStorage.getItem(`daily-pose-${today}`);
     if (stored) {
       setDailyPose(JSON.parse(stored));
@@ -126,8 +124,7 @@ setCalendarData(fullCalendar);
         raw = raw.replace(/```json/, '').replace(/```/, '').trim();
         raw = JSON.parse(raw);
       }
-
-      const info = raw?.[0] || {};
+        const info = raw?.[0] || {};
 
       const enriched = {
         title: randomPose.name,
@@ -148,7 +145,7 @@ setCalendarData(fullCalendar);
     const today = new Date().toISOString().split('T')[0];
     generateDailyPose(today);
   }, []);
-
+  
   return (
     <div className="dashboard">
       <h2>Dashboard</h2>

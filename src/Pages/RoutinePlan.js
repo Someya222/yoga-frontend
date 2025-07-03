@@ -12,7 +12,7 @@ function RoutinePlan() {
   const [saved, setSaved] = useState(false);
   const [streak, setStreak] = useState(0);
   const [poseStatus, setPoseStatus] = useState({}); // { index: true/false }
-
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
   const checkAuthAndFetch = async () => {
@@ -23,16 +23,20 @@ function RoutinePlan() {
       setStreak(res.data.streak || 0);
 
      const routineRes = await API.get(`/yoga/routine?date=${today}`);
-if (routineRes.data?.length) {
-  setRoutine(routineRes.data);
+const { routine: fetchedRoutine, goal: fetchedGoal } = routineRes.data;
+
+if (fetchedRoutine?.length) {
+  setRoutine(fetchedRoutine);
+  setGoal(fetchedGoal); // ✅ set goal
   setSaved(true);
 
   const savedStatus = {};
-  routineRes.data.forEach((pose, idx) => {
+  fetchedRoutine.forEach((pose, idx) => {
     savedStatus[idx] = pose.done;
   });
   setPoseStatus(savedStatus);
 }
+
 
     } catch {
       navigate('/login');
@@ -45,50 +49,104 @@ if (routineRes.data?.length) {
 
 
   const handleGenerate = async () => {
-    if (!goal.trim()) return alert('Please enter a goal');
+  if (!goal.trim()) return alert('Please enter a goal');
+  setLoading(true);
+  try {
+    const datasetRes = await fetch('http://localhost:5000/api/yoga/dataset');
+    const dataset = await datasetRes.json();
 
-    try {
-      const datasetRes = await fetch('http://localhost:5000/api/yoga/dataset');
-      const dataset = await datasetRes.json();
+    const aiRes = await fetch('/api/yoga/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal }),
+    });
 
-      const aiRes = await fetch('/api/yoga/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal }),
-      });
+    const aiData = await aiRes.json();
+    let raw = aiData.poses;
 
-      const aiData = await aiRes.json();
-      let raw = aiData.poses;
-
-      if (typeof raw === 'string') {
-        raw = raw.replace(/```json/, '').replace(/```/, '').trim();
-        raw = JSON.parse(raw);
-      }
-
-      const enriched = raw.slice(0, 6).map(pose => {
-        const match = dataset.find(
-          item =>
-            item.name.toLowerCase() === pose.title.toLowerCase() ||
-            item.sanskrit_name.toLowerCase() === pose.title.toLowerCase()
-        );
-
-        return {
-          title: pose.title,
-          image: match?.photo_url || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg',
-          instructions: pose.instructions || 'No instructions provided',
-          benefits: pose.benefits || 'No benefits listed',
-          done: false,
-        };
-      });
-
-      setRoutine(enriched);
-      localStorage.setItem(`routine-${today}`, JSON.stringify(enriched));
-      setSaved(true);
-    } catch (err) {
-      console.error('Error generating routine:', err);
-      alert('Something went wrong. Try again.');
+    if (typeof raw === 'string') {
+      raw = raw.replace(/```json/, '').replace(/```/, '').trim();
+      raw = JSON.parse(raw);
     }
+    console.log("rawdata",raw)
+    // const enriched = raw.slice(0, 6).map((pose) => {
+    //   const title = pose.title.trim().toLowerCase();
+
+    //   const match = dataset.find((item) => {
+    //     const name = item.name.trim().toLowerCase();
+    //     const sanskrit = item.sanskrit_name.trim().toLowerCase();
+    //     return (
+    //       name.includes(title) ||
+    //       title.includes(name) ||
+    //       sanskrit.includes(title) ||
+    //       title.includes(sanskrit)
+    //     );
+    //   });
+
+    //   if (!match) {
+    //     console.warn('No match found for:', pose.title);
+    //   }
+
+    //   return {
+    //     title: pose.title,
+    //     image:
+    //       match?.photo_url ||
+    //       'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg',
+    //     instructions: pose.instructions || 'No instructions provided',
+    //     benefits: pose.benefits || 'No benefits listed',
+    //     done: false,
+    //   };
+    // });
+
+
+const enriched = raw.slice(0, 6).map((pose) => {
+  const englishKey = pose.english_name_search?.trim().toLowerCase();
+  const sanskritKey = pose.sanskrit_name_search?.trim().toLowerCase();
+
+  const matchedItem = dataset.find((item) => {
+    const name = item.name.trim().toLowerCase();
+    const sanskrit = item.sanskrit_name.trim().toLowerCase();
+
+    return (
+      name === englishKey || 
+      sanskrit === sanskritKey
+    );
+  });
+
+  if (!matchedItem) {
+    console.warn("No dataset match for:", pose.title);
+    console.log("Searched with:", englishKey, "or", sanskritKey);
+  }
+
+  return {
+    title: pose.title,
+    image:
+      matchedItem?.photo_url ||
+      "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg",
+    instructions: pose.instructions || "No instructions provided",
+    benefits: pose.benefits || "No benefits listed",
+    done: false,
   };
+});
+
+
+    setRoutine(enriched);
+
+    await API.post('/yoga/routine-status', {
+      date: today,
+      goal,
+      routine: enriched,
+    });
+
+    setSaved(true);
+  } catch (err) {
+
+    console.error('Error generating routine:', err);
+    alert('Something went wrong. Try again.');
+  }
+  setLoading(false);
+};
+
 
   const handleMarkDone = async (index) => {
   const today = new Date().toISOString().split('T')[0];
@@ -106,7 +164,9 @@ if (routineRes.data?.length) {
   try {
     await API.post('/yoga/routine-status', {
       date: today,
-      routine: updatedRoutine,
+      goal,
+      routine: updatedRoutine
+      
     });
   } catch (err) {
     console.error('Error syncing pose status to backend:', err);
@@ -117,7 +177,6 @@ if (routineRes.data?.length) {
 
 
   const handleChangeGoal = () => {
-    localStorage.removeItem(`routine-${today}`);
     setRoutine([]);
     setSaved(false);
     setGoal('');
@@ -125,7 +184,7 @@ if (routineRes.data?.length) {
 
   return (
     <div className="routine-container">
-      <h2>🎯 Goal-Based Yoga Routine</h2>
+      <h2 style={{ marginTop: '1px' }}> Goal-Based Yoga Routine</h2>
 
       {!saved && (
         <div style={{ marginBottom: '20px' }}>
@@ -136,23 +195,26 @@ if (routineRes.data?.length) {
             placeholder="e.g. stress relief, PCOD, weight loss"
             style={{ padding: '8px', width: '250px' }}
           />
-          <button onClick={handleGenerate} style={{ marginLeft: '10px' }}>
+          <button class="goal-button" onClick={handleGenerate} style={{ marginLeft: '10px' }}>
             Generate Routine
           </button>
+          {loading && (
+  <div className="spinner"></div>
+)}
         </div>
       )}
 
       {saved && (
-        <div style={{ marginBottom: '20px' }}>
-          <h3>🧘 Routine for <span style={{ color: 'green' }}>{goal || 'Your Goal'}</span></h3>
+        <div style={{ marginBottom: '10px' }}>
+          <h3> Routine for <span style={{ color: 'green' }}>{goal || 'Your Goal'}</span></h3>
           <p><em>This routine focuses on your goal: <strong>{goal}</strong>.</em></p>
-          <button onClick={handleChangeGoal}>Change Goal</button>
-          <p style={{ marginTop: '10px' }}>🔥 Routine Streak: {streak} {streak === 1 ? 'day' : 'days'}!</p>
+          <button class="change-goal-button" onClick={handleChangeGoal}>Change Goal</button>
+          <p style={{ marginTop: '10px' }}> Routine Streak: {streak} {streak === 1 ? 'day' : 'days'}!</p>
         </div>
       )}
 
       {routine.length > 0 && (
-        <div>
+        <div className="routine-card-internal">
           {routine.map((pose, index) => (
             <div key={index} style={{
               border: '1px solid #ccc',
@@ -186,7 +248,7 @@ if (routineRes.data?.length) {
     borderRadius: '6px',
     fontWeight: 'bold'
   }}>
-    🎉 Well done! You've completed your yoga routine today!
+     Well done! You've completed your yoga routine today!
   </div>
 )}
 
