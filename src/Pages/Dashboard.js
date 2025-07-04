@@ -100,11 +100,15 @@ const [selectedYear, setSelectedYear] = useState(today.getFullYear());
 
       const randomPose = dataset[Math.floor(Math.random() * dataset.length)];
 
-      const aiRes = await fetch('/api/yoga/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal: randomPose.name }),
-      });
+     const aiRes = await fetch('https://yoga-backend-17s9.onrender.com/api/yoga/generate', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-auth-token': localStorage.getItem('token')  // if auth is needed
+  },
+  body: JSON.stringify({ goal: randomPose.name }),
+});
+
 
       const aiData = await aiRes.json();
       let raw = aiData.poses;
